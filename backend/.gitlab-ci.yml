@@ -1,0 +1,74 @@
+---
+variables:
+  VERSION: 1.0.${CI_PIPELINE_ID}
+  SAST_EXCLUDED_ANALYZERS: "eslint,gosec,nodejs-scan"
+
+include:
+  - project: templates/ci
+    file: DockerInDockerTemplate.yml
+  - template: Security/SAST.gitlab-ci.yml
+
+stages:
+  - build
+  - test
+  - release
+
+build-backend-code-job:
+  stage: build
+  image: docker:20.10.12-dind-rootless
+  before_script:
+    - until docker info; do sleep 1; done
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker login -u $DOCKERHUB_LOGIN -p $DOCKERHUB_PASSWORD
+  script:
+    - cd backend
+    - >
+      docker build --build-arg VERSION=$VERSION --tag
+      $CI_REGISTRY_IMAGE/momo-backend:$CI_COMMIT_SHA .
+    - docker push $CI_REGISTRY_IMAGE/momo-backend:$CI_COMMIT_SHA
+
+test-backend-code-job:
+  stage: test
+  image: golang:1.20
+  script:
+    - cd backend
+    - go fmt $(go list ./... | grep -v /vendor/)
+    - go vet $(go list ./... | grep -v /vendor/)
+    - go test -race $(go list ./... | grep -v /vendor/)
+    - go test -v ./...
+  needs:
+    - build-backend-code-job
+
+sonarqube-backend-sast:
+  stage: test
+  image: sonarsource/sonar-scanner-cli:latest
+  script:
+    - cd backend
+    - >
+      sonar-scanner -Dsonar.projectKey=${BACKEND_PROJECT_KEY}
+      -Dsonar.projectName=${BACKEND_PROJECT_NAME}
+      -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.sources=.
+      -Dsonar.login=${SONAR_LOGIN}
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  needs:
+    - build-backend-code-job
+
+upload-backend-latest:
+  variables:
+    GIT_STRATEGY: none
+  stage: release
+  image: docker:20.10.12-dind-rootless
+  before_script:
+    - until docker info; do sleep 1; done
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker login -u $DOCKERHUB_LOGIN -p $DOCKERHUB_PASSWORD    
+  script:
+    - docker pull $CI_REGISTRY_IMAGE/momo-backend:$CI_COMMIT_SHA
+    - docker tag $CI_REGISTRY_IMAGE/momo-backend:$CI_COMMIT_SHA
+      $CI_REGISTRY_IMAGE/momo-backend:latest
+    - docker push $CI_REGISTRY_IMAGE/momo-backend:latest
+  needs:
+    - test-backend-code-job

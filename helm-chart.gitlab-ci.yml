@@ -1,0 +1,42 @@
+variables:
+  VERSION: 0.2.${CI_PIPELINE_ID}
+
+stages:
+  - polaris
+  - release
+
+
+validate-helm-chart:
+  stage: polaris
+  image: dtzar/helm-kubectl:3.7.2
+  variables:
+    POLARIS_VERSION: 7.0.1
+    POLARIS_HELM_PATH: './momo-store-chart'
+    POLARIS_SCORE_LEVEL: 50
+  allow_failure: true
+  before_script:
+    # Install polaris
+    - wget https://github.com/FairwindsOps/polaris/releases/download/${POLARIS_VERSION}/polaris_linux_amd64.tar.gz
+    - tar -xvzf ./polaris_linux_amd64.tar.gz
+    - mv ./polaris /bin/polaris
+  script:
+    - >
+      if [[ -z ${POLARIS_HELM_PATH} ]]; then
+        polaris audit --audit-path ${POLARIS_RAW_PATH} --only-show-failed-tests --set-exit-code-below-score ${POLARIS_SCORE_LEVEL} --format=pretty $(if [[ -z $POLARIS_CONFIG ]]; then echo ""; else echo --config $POLARIS_CONFIG; fi);
+      elif [[ -z ${POLARIS_RAW_PATH} ]]; then
+        polaris audit --helm-chart ${POLARIS_HELM_PATH} --only-show-failed-tests --set-exit-code-below-score ${POLARIS_SCORE_LEVEL} --format=pretty $(if [[ -z $POLARIS_CONFIG ]]; then echo ""; else echo --config $POLARIS_CONFIG; fi);
+      fi
+
+
+upload-helm-chart:
+  stage: release  
+  image: alpine/k8s:1.22.6
+  when: manual
+  script:    
+    - |
+      sed -i "s/0.2.*/$VERSION/g" momo-store-chart/Chart.yaml
+      if helm package ./momo-store-chart; then
+        curl -v -u ${NEXUS_REPO_USER}:${NEXUS_REPO_PASS} ${NEXUS_REPO_URL} --upload-file $CI_PROJECT_DIR/momo-store-${VERSION}.tgz
+      else
+        echo "Failed to package Helm charts."
+      fi

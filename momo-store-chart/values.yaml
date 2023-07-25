@@ -1,0 +1,86 @@
+---
+backend:
+  name: backend
+  image: gitlab.praktikum-services.ru:5050/std-013-84/momo-store/momo-backend
+  imagePullPolicy: Always
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  ports:
+    - name: backend
+      containerPort: 8081
+  revisionHistoryLimit: 15
+  service:
+    spec:
+      type: ClusterIP
+      selector:
+        app: backend
+      ports:
+        - name: tcp
+          port: 8081
+          targetPort: 8081
+
+frontend:
+  fqdn: my-pelmen.mooo.com
+  name: frontend
+  image: gitlab.praktikum-services.ru:5050/std-013-84/momo-store/momo-frontend
+  imagePullPolicy: Always
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  ports:
+    - name: frontend
+      containerPort: 80
+  volumeMounts:
+    - name: nginx-config
+      mountPath: /etc/nginx/conf.d/default.conf
+      subPath: default.conf
+  volumes:
+    - name: nginx-config
+      configMap:
+        name: nginx-config
+        items:
+          - key: nginx.conf
+            path: default.conf
+  revisionHistoryLimit: 15
+  service:
+    spec:
+      type: ClusterIP
+      selector:
+        app: frontend
+      ports:
+      - protocol: TCP
+        port: 80
+        targetPort: 80
+  ingress:
+    rules:
+      - host: "my-pelmen.mooo.com"
+        http:
+          paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: frontend
+                  port:
+                    number: 80

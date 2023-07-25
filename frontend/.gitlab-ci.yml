@@ -1,0 +1,62 @@
+---
+variables:
+  VERSION: 1.0.${CI_PIPELINE_ID}
+  SAST_EXCLUDED_ANALYZERS: "spotbugs,gosec"
+
+include:
+  - project: templates/ci
+    file: DockerInDockerTemplate.yml
+  - template: Security/SAST.gitlab-ci.yml
+
+stages:
+  - build
+  - test
+  - release
+
+build-frontend-code-job:
+  stage: build
+  image: docker:20.10.12-dind-rootless
+  before_script:
+    - until docker info; do sleep 1; done
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker login -u $DOCKERHUB_LOGIN -p $DOCKERHUB_PASSWORD
+  script:
+    - cd frontend
+    - >
+      docker build --build-arg VERSION=$VERSION --build-arg SHOP_URL=$SHOP_URL --tag
+      $CI_REGISTRY_IMAGE/momo-frontend:$CI_COMMIT_SHA .
+    - docker push $CI_REGISTRY_IMAGE/momo-frontend:$CI_COMMIT_SHA
+
+sonarqube-frontend-sast:
+  stage: test
+  image: sonarsource/sonar-scanner-cli:latest
+  script:
+    - cd frontend
+    - >
+      sonar-scanner -Dsonar.projectKey=${FRONTEND_PROJECT_KEY}
+      -Dsonar.projectName=${FRONTEND_PROJECT_NAME}
+      -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.sources=.
+      -Dsonar.login=${SONAR_LOGIN}
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  needs:
+    - build-frontend-code-job
+
+upload-frontend-latest:
+  variables:
+    GIT_STRATEGY: none
+  stage: release
+  image: docker:20.10.12-dind-rootless
+  before_script:
+    - until docker info; do sleep 1; done
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker login -u $DOCKERHUB_LOGIN -p $DOCKERHUB_PASSWORD
+  script:
+    - docker pull $CI_REGISTRY_IMAGE/momo-frontend:$CI_COMMIT_SHA
+    - docker tag $CI_REGISTRY_IMAGE/momo-frontend:$CI_COMMIT_SHA
+      $CI_REGISTRY_IMAGE/momo-frontend:latest
+    - docker push $CI_REGISTRY_IMAGE/momo-frontend:latest
+  needs:
+    - build-frontend-code-job

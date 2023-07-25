@@ -1,0 +1,45 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.Version }}
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: momo-store
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: {{ .Values.replicas }}
+  strategy:
+{{ toYaml .Values.strategy | indent 4 }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app:  {{ .Chart.Name }}
+        release: {{ .Release.Name }}
+      annotations:
+        kubernetes.io/service-account.name: my-serviceaccount # добавляем аннотацию с именем сервис-аккаунта (для скачивания образов из Container Registry)
+    spec:
+      securityContext:
+        runAsNonRoot: false  
+      containers:
+        - name: {{ .Values.name }}
+          image: "{{ .Values.image }}:{{ .Chart.AppVersion}}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+          ports:
+{{ toYaml .Values.ports | indent 12 }}
+          volumeMounts:
+{{ toYaml .Values.volumeMounts | indent 12 }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      volumes:
+{{ toYaml .Values.volumes | indent 8 }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
