@@ -38,7 +38,7 @@ export AWS_SECRET_ACCESS_KEY="<секретный_ключ>"
 и загрузите туда картинки пельменей
 (в данном проекте это хранилище создается терраформом)
 
-<img width="900" alt="image" src="https://storage.yandexcloud.net/momo-store-pictures/s3-bucket.png">
+<img width="900" alt="image" src="https://github.com/Zhihareff/momo-store/raw/main/image/s3-bucket.png">
 
 
 ## 3. Настройте /.kube/config
@@ -218,13 +218,13 @@ kubectl -n kube-system get secret argocd-initial-admin-secret -o jsonpath="{.dat
 
 Приложение доступно по адресу: https://my-pelmen.mooo.com
 
-<img width="900" alt="image" src="https://storage.yandexcloud.net/momo-store-pictures/site.png">
+<img width="900" alt="image" src="https://github.com/Zhihareff/momo-store/raw/main/image/site.png">
 
 
-<img width="900" alt="image" src="https://storage.yandexcloud.net/momo-store-pictures/argocd.png">
+<img width="900" alt="image" src="https://github.com/Zhihareff/momo-store/raw/main/image/argocd.png">
 
 
-<img width="900" alt="image" src="https://storage.yandexcloud.net/momo-store-pictures/nexus.png">
+<img width="900" alt="image" src="https://github.com/Zhihareff/momo-store/raw/main/image/nexus.png">
 
 
 
@@ -357,9 +357,9 @@ kubectl port-forward <имя_пода_prometheus> -n default 9090
 
 Пример того, что должно получиться:
 
-<img width="900" alt="image" src="https://storage.yandexcloud.net/momo-store-pictures/prometheus01.png">
-<img width="900" alt="image" src="https://storage.yandexcloud.net/momo-store-pictures/prometheus02.png">
-<img width="900" alt="image" src="https://storage.yandexcloud.net/momo-store-pictures/prometheus03.png">
+<img width="900" alt="image" src="https://github.com/Zhihareff/momo-store/raw/main/image/prometheus01.png">
+<img width="900" alt="image" src="https://github.com/Zhihareff/momo-store/raw/main/image/prometheus02.png">
+<img width="900" alt="image" src="https://github.com/Zhihareff/momo-store/raw/main/image/prometheus03.png">
 
 
 ## 2. Установка Grafana
@@ -378,7 +378,7 @@ kubectl port-forward <имя_пода_grafana> -n default 3000
 
 Пример того, что должно получиться:
 
-<img width="900" alt="image" src="https://storage.yandexcloud.net/momo-store-pictures/grafana.png">
+<img width="900" alt="image" src="https://github.com/Zhihareff/momo-store/raw/main/image/grafana.png">
 
 # БОНУС. POLARIS
 
@@ -402,5 +402,5 @@ helm upgrade --install polaris fairwinds-stable/polaris --namespace polaris --cr
 kubectl port-forward --namespace polaris svc/polaris-dashboard 8080:80
 ```
 пример дашборда:
-<img width="900" alt="image" src="https://storage.yandexcloud.net/momo-store-pictures/polaris01.png">
-<img width="900" alt="image" src="https://storage.yandexcloud.net/momo-store-pictures/polaris02.png">
+<img width="900" alt="image" src="https://github.com/Zhihareff/momo-store/raw/main/image/polaris01.png">
+<img width="900" alt="image" src="https://github.com/Zhihareff/momo-store/raw/main/image/polaris02.png">
